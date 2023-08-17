@@ -1,0 +1,4 @@
+name: PluginTemplate
+version: '${project.version}'
+main: ru.cwcode.plugintemplate.PluginTemplate
+api-version: '1.20'
