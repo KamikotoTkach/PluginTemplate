@@ -1,5 +1,6 @@
 package ru.cwcode.plugintemplate;
 
+import jdk.internal.reflect.Label;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -27,6 +28,7 @@ public abstract class PluginTemplate extends Bootstrap {
   public static JavaPlugin plugin;
   public static Logger logger;
   List<Runnable> runSync = new ArrayList<>();
+  protected InjectFields injectFields;
   
   @Override
   public void onDisable() {
@@ -40,15 +42,14 @@ public abstract class PluginTemplate extends Bootstrap {
     logger = getLogger();
     yml = new YmlConfigManager(this);
     
+    injectFields.bind(logger, Logger.class);
+    injectFields.bind(plugin, JavaPlugin.class);
+    
     super.onLoad();
   }
   
   @Override
   protected CompletableFuture<Void> asyncTask() {
-    InjectFields injectFields = getInjectFields();
-    
-    injectFields.bind(logger, Logger.class);
-    injectFields.bind(plugin, JavaPlugin.class);
     
     return CompletableFuture.runAsync(() -> {
       
@@ -76,10 +77,6 @@ public abstract class PluginTemplate extends Bootstrap {
     runSync = null;
   }
   
-  @NotNull
-  protected InjectFields getInjectFields() {
-    return new InjectFields();
-  }
   
   protected void registerListener(Class<?> classInfo) {
     Object listener = ReflectionUtils.getNewInstance(classInfo);
