@@ -1,10 +1,8 @@
 package ru.cwcode.plugintemplate;
 
-import jdk.internal.reflect.Label;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 import tkachgeek.config.yaml.YmlConfig;
 import tkachgeek.config.yaml.YmlConfigManager;
 import tkachgeek.tkachutils.bootstrap.Bootstrap;
@@ -27,8 +25,8 @@ public abstract class PluginTemplate extends Bootstrap {
   public static YmlConfigManager yml;
   public static JavaPlugin plugin;
   public static Logger logger;
-  List<Runnable> runSync = new ArrayList<>();
   protected InjectFields injectFields;
+  List<Runnable> runSync = new ArrayList<>();
   
   @Override
   public void onDisable() {
@@ -77,10 +75,9 @@ public abstract class PluginTemplate extends Bootstrap {
     runSync = null;
   }
   
-  
   protected void registerListener(Class<?> classInfo) {
     Object listener = ReflectionUtils.getNewInstance(classInfo);
-    if(listener == null) return;
+    if (listener == null) return;
     
     Bukkit.getPluginManager().registerEvents((Listener) listener, this);
   }
