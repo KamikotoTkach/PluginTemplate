@@ -26,7 +26,7 @@ public abstract class PluginTemplate extends Bootstrap {
   public static JavaPlugin plugin;
   public static Logger logger;
   protected InjectFields injectFields;
-  List<Runnable> runSync = new ArrayList<>();
+  protected List<Runnable> runSync = new ArrayList<>();
   
   @Override
   public void onDisable() {
@@ -48,24 +48,24 @@ public abstract class PluginTemplate extends Bootstrap {
   
   @Override
   protected CompletableFuture<Void> asyncTask() {
-    
-    return CompletableFuture.runAsync(() -> {
-      
-      new ClassScanner(this.getFile())
-         .apply(new ClassScanner.ClassApplier(YmlConfig.class::isAssignableFrom,
-                                              classInfo -> ReflectionUtils.tryToInvokeStaticMethod(classInfo, "getInstance")))
-         
-         .apply(new ClassScanner.ClassApplier(Listener.class::isAssignableFrom,
-                                              this::registerListener))
-         
-         .apply(new ClassScanner.ClassApplier(classInfo -> true,
-                                              classInfo -> Injector.inject(classInfo, injectFields)))
-         
-         .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
-                                               this::handleRepeatMethod))
-         
-         .scan(this);
-    });
+    return CompletableFuture.runAsync(this::scanClasses);
+  }
+  
+  protected void scanClasses() {
+    new ClassScanner(this.getFile())
+       .apply(new ClassScanner.ClassApplier(YmlConfig.class::isAssignableFrom,
+                                            classInfo -> ReflectionUtils.tryToInvokeStaticMethod(classInfo, "getInstance")))
+       
+       .apply(new ClassScanner.ClassApplier(Listener.class::isAssignableFrom,
+                                            this::registerListener))
+       
+       .apply(new ClassScanner.ClassApplier(classInfo -> true,
+                                            classInfo -> Injector.inject(classInfo, injectFields)))
+       
+       .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
+                                             this::handleRepeatMethod))
+       
+       .scan(this);
   }
   
   @Override
