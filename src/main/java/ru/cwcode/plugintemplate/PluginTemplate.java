@@ -25,8 +25,8 @@ public abstract class PluginTemplate extends Bootstrap {
   public static YmlConfigManager yml;
   public static JavaPlugin plugin;
   public static Logger logger;
-  protected InjectFields injectFields;
-  protected List<Runnable> runSync = new ArrayList<>();
+  protected volatile InjectFields injectFields;
+  protected volatile List<Runnable> runSync = new ArrayList<>();
   
   @Override
   public void onDisable() {
@@ -40,10 +40,29 @@ public abstract class PluginTemplate extends Bootstrap {
     logger = getLogger();
     yml = new YmlConfigManager(this);
     
+    injectFields = new InjectFields();
+    
     injectFields.bind(logger, Logger.class);
     injectFields.bind(plugin, JavaPlugin.class);
     
+    onInitialize();
+    
     super.onLoad();
+  }
+  
+  @Override
+  public void onEnable() {
+    super.onEnable();
+    
+    beforeSyncDelayedTasks();
+    
+    runSync.forEach(Runnable::run);
+    runSync = null;
+    
+    afterSyncDelayedTasks();
+  }
+  protected void onInitialize() {
+  
   }
   
   @Override
@@ -60,7 +79,7 @@ public abstract class PluginTemplate extends Bootstrap {
                                             this::registerListener))
        
        .apply(new ClassScanner.ClassApplier(classInfo -> true,
-                                            classInfo -> Injector.inject(classInfo, injectFields)))
+                                            classInfo -> runSync.add(() -> Injector.inject(classInfo, injectFields))))
        
        .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
                                              this::handleRepeatMethod))
@@ -68,18 +87,13 @@ public abstract class PluginTemplate extends Bootstrap {
        .scan(this);
   }
   
-  @Override
-  public void onEnable() {
-    super.onEnable();
-    runSync.forEach(Runnable::run);
-    runSync = null;
-  }
-  
   protected void registerListener(Class<?> classInfo) {
     Object listener = ReflectionUtils.getNewInstance(classInfo);
     if (listener == null) return;
     
-    Bukkit.getPluginManager().registerEvents((Listener) listener, this);
+    runSync.add(() -> {
+      Bukkit.getPluginManager().registerEvents((Listener) listener, this);
+    });
   }
   
   protected void handleRepeatMethod(Method method) {
@@ -91,5 +105,14 @@ public abstract class PluginTemplate extends Bootstrap {
         RepeatAPI.registerRepeatable(this, method, annotation);
       });
     }
+  }
+  
+
+  
+  protected void afterSyncDelayedTasks() {
+  }
+  
+  protected void beforeSyncDelayedTasks() {
+  
   }
 }
