@@ -25,8 +25,10 @@ public abstract class PluginTemplate extends Bootstrap {
   public static YmlConfigManager yml;
   public static JavaPlugin plugin;
   public static Logger logger;
-  protected volatile InjectFields injectFields;
+  protected volatile InjectFields injectFields = new InjectFields();
   protected volatile List<Runnable> runSync = new ArrayList<>();
+  protected volatile List<Class<?>> allClasses = new ArrayList<>();
+  protected volatile List<Method> handleRepeatable = new ArrayList<>();
   
   @Override
   public void onDisable() {
@@ -40,29 +42,10 @@ public abstract class PluginTemplate extends Bootstrap {
     logger = getLogger();
     yml = new YmlConfigManager(this);
     
-    injectFields = new InjectFields();
-    
     injectFields.bind(logger, Logger.class);
     injectFields.bind(plugin, JavaPlugin.class);
     
-    onInitialize();
-    
     super.onLoad();
-  }
-  
-  @Override
-  public void onEnable() {
-    super.onEnable();
-    
-    beforeSyncDelayedTasks();
-    
-    runSync.forEach(Runnable::run);
-    runSync = null;
-    
-    afterSyncDelayedTasks();
-  }
-  protected void onInitialize() {
-  
   }
   
   @Override
@@ -70,49 +53,69 @@ public abstract class PluginTemplate extends Bootstrap {
     return CompletableFuture.runAsync(this::scanClasses);
   }
   
-  protected void scanClasses() {
-    new ClassScanner(this.getFile())
-       .apply(new ClassScanner.ClassApplier(YmlConfig.class::isAssignableFrom,
-                                            classInfo -> ReflectionUtils.tryToInvokeStaticMethod(classInfo, "getInstance")))
-       
-       .apply(new ClassScanner.ClassApplier(Listener.class::isAssignableFrom,
-                                            this::registerListener))
-       
-       .apply(new ClassScanner.ClassApplier(classInfo -> true,
-                                            classInfo -> runSync.add(() -> Injector.inject(classInfo, injectFields))))
-       
-       .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
-                                             this::handleRepeatMethod))
-       
-       .scan(this);
+  @Override
+  public void onEnable() {
+    super.onEnable();
+    
+    runDelayedTasks();
   }
   
-  protected void registerListener(Class<?> classInfo) {
+  private void runDelayedTasks() {
+    onDelayedTask();
+    
+    for (Class<?> classInfo : allClasses) {
+      if (Listener.class.isAssignableFrom(classInfo)) {
+        registerListener(classInfo);
+      }
+      
+      if (YmlConfig.class.isAssignableFrom(classInfo)) {
+        ReflectionUtils.tryToInvokeStaticMethod(classInfo, "getInstance");
+      }
+      
+      Injector.inject(classInfo, injectFields);
+    }
+    
+    for (Method method : handleRepeatable) {
+      handleRepeatMethod(method);
+    }
+    
+    for (Runnable runnable : runSync) {
+      runnable.run();
+    }
+    
+    runSync = null;
+    allClasses = null;
+    injectFields = null;
+    handleRepeatable = null;
+  }
+  
+  protected void onDelayedTask() {
+  }
+  
+  private void registerListener(Class<?> classInfo) {
     Object listener = ReflectionUtils.getNewInstance(classInfo);
     if (listener == null) return;
     
-    runSync.add(() -> {
-      Bukkit.getPluginManager().registerEvents((Listener) listener, this);
-    });
+    Bukkit.getPluginManager().registerEvents((Listener) listener, this);
   }
   
-  protected void handleRepeatMethod(Method method) {
+  private void handleRepeatMethod(Method method) {
     Repeat annotation = method.getAnnotation(Repeat.class);
     
     if (annotation != null) {
-      runSync.add(() -> {
-        this.getLogger().info("Registered task " + method.getDeclaringClass().getSimpleName() + "/" + method.getName());
-        RepeatAPI.registerRepeatable(this, method, annotation);
-      });
+      this.getLogger().info("Registered task " + method.getDeclaringClass().getSimpleName() + "/" + method.getName());
+      RepeatAPI.registerRepeatable(this, method, annotation);
     }
   }
   
-
-  
-  protected void afterSyncDelayedTasks() {
-  }
-  
-  protected void beforeSyncDelayedTasks() {
-  
+  private void scanClasses() {
+    new ClassScanner(this.getFile())
+       .apply(new ClassScanner.ClassApplier(aClass -> true,
+                                            classInfo -> allClasses.add(classInfo)))
+       
+       .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
+                                             method -> handleRepeatable.add(method)))
+       
+       .scan(this);
   }
 }
