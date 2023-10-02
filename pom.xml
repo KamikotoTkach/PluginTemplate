@@ -6,7 +6,7 @@
 
     <groupId>ru.cwcode</groupId>
     <artifactId>PluginTemplate</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>PluginTemplate</name>
@@ -65,9 +65,21 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.papermc.paper</groupId>
+            <groupId>tkachgeek</groupId>
+            <artifactId>TkachUtils</artifactId>
+            <version>1.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>tkachgeek</groupId>
+            <artifactId>ConfigYml</artifactId>
+            <version>1.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.destroystokyo.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.20.1-R0.1-SNAPSHOT</version>
+            <version>1.16.5-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

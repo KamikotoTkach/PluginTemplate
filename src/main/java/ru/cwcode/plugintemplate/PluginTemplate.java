@@ -109,13 +109,18 @@ public abstract class PluginTemplate extends Bootstrap {
   }
   
   private void scanClasses() {
-    new ClassScanner(this.getFile())
-       .apply(new ClassScanner.ClassApplier(aClass -> true,
-                                            classInfo -> allClasses.add(classInfo)))
-       
-       .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
-                                             method -> handleRepeatable.add(method)))
-       
-       .scan(this);
+    try {
+      
+      new ClassScanner(this.getFile())
+         .apply(new ClassScanner.ClassApplier(aClass -> true,
+                                              classInfo -> allClasses.add(classInfo)))
+         
+         .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
+                                               method -> handleRepeatable.add(method)))
+         
+         .scan(this);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }
