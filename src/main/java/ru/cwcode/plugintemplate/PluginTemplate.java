@@ -3,6 +3,9 @@ package ru.cwcode.plugintemplate;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.cwcode.plugintemplate.annotations.DoNotRegister;
+import ru.cwcode.plugintemplate.config.LegacyReload;
+import ru.cwcode.plugintemplate.config.PaperReload;
 import tkachgeek.config.yaml.YmlConfig;
 import tkachgeek.config.yaml.YmlConfigManager;
 import tkachgeek.tkachutils.bootstrap.Bootstrap;
@@ -84,7 +87,6 @@ public abstract class PluginTemplate extends Bootstrap {
     }
     
     runSync = null;
-    allClasses = null;
     injectFields = null;
     handleRepeatable = null;
   }
@@ -93,6 +95,8 @@ public abstract class PluginTemplate extends Bootstrap {
   }
   
   private void registerListener(Class<?> classInfo) {
+    if (classInfo.isAnnotationPresent(DoNotRegister.class)) return;
+    
     Object listener = ReflectionUtils.getNewInstance(classInfo);
     if (listener == null) return;
     
@@ -122,5 +126,21 @@ public abstract class PluginTemplate extends Bootstrap {
     } catch (Exception e) {
       e.printStackTrace();
     }
+  }
+  
+  public void updateInjectedFields(List<?> update) {
+    InjectFields inject = new InjectFields(update.toArray());
+    
+    for (Class<?> classInfo : allClasses) {
+      Injector.inject(classInfo, inject);
+    }
+  }
+  
+  protected PaperReload paperReload() {
+    return new PaperReload(yml, this);
+  }
+  
+  protected LegacyReload legacyReload() {
+    return new LegacyReload(yml, this);
   }
 }
