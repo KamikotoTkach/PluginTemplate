@@ -1,0 +1,11 @@
+name: PluginTemplate
+main: ru.cwcode.plugintemplate.Main
+version: 1.0
+api-version: 1.14
+author: TkachGeek
+website: "https://t.me/tkachx"
+folia-supported: true
+depend:
+  - CWCommands
+softdepend:
+  - Config
