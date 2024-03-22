@@ -122,6 +122,7 @@ public abstract class PluginTemplate extends Bootstrap {
          .apply(new ClassScanner.MethodApplier(method -> Modifier.isStatic(method.getModifiers()) && method.getParameterCount() == 0,
                                                method -> handleRepeatable.add(method)))
          
+         .classFilter(classPath -> !classPath.startsWith(getClass().getPackage().getName() + ".integration."))
          .scan(this);
     } catch (Exception e) {
       e.printStackTrace();
