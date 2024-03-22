@@ -3,11 +3,12 @@ package ru.cwcode.plugintemplate;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import ru.cwcode.commands.Command;
 import ru.cwcode.plugintemplate.annotations.DoNotRegister;
-import ru.cwcode.plugintemplate.config.LegacyReload;
-import ru.cwcode.plugintemplate.config.PaperReload;
-import tkachgeek.config.yaml.YmlConfig;
-import tkachgeek.config.yaml.YmlConfigManager;
+import ru.cwcode.tkach.config.commands.ReloadCommands;
+import ru.cwcode.tkach.config.jackson.yaml.YmlConfig;
+import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
+import ru.cwcode.tkach.config.paper.PaperPluginConfigPlatform;
 import tkachgeek.tkachutils.bootstrap.Bootstrap;
 import tkachgeek.tkachutils.reflection.ClassScanner;
 import tkachgeek.tkachutils.reflection.ReflectionUtils;
@@ -20,6 +21,7 @@ import tkachgeek.tkachutils.scheduler.annotationRepeatable.RepeatAPI;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
@@ -35,7 +37,7 @@ public abstract class PluginTemplate extends Bootstrap {
   
   @Override
   public void onDisable() {
-    yml.storeAll();
+    yml.saveAll(configPersistOptions -> {});
     Tasks.cancelTasks(this);
   }
   
@@ -43,7 +45,7 @@ public abstract class PluginTemplate extends Bootstrap {
   public void onLoad() {
     plugin = this;
     logger = getLogger();
-    yml = new YmlConfigManager(this);
+    yml = new YmlConfigManager(new PaperPluginConfigPlatform(this));
     
     injectFields.bind(logger, Logger.class);
     injectFields.bind(plugin, JavaPlugin.class);
@@ -137,11 +139,9 @@ public abstract class PluginTemplate extends Bootstrap {
     }
   }
   
-  protected PaperReload paperReload() {
-    return new PaperReload(yml, this);
-  }
-  
-  protected LegacyReload legacyReload() {
-    return new LegacyReload(yml, this);
+  protected Command paperReload() {
+    return ReloadCommands.get(yml, ymlConfig -> {
+      updateInjectedFields(Collections.singletonList(ymlConfig));
+    });
   }
 }

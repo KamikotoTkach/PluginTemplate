@@ -6,7 +6,7 @@
 
     <groupId>ru.cwcode</groupId>
     <artifactId>PluginTemplate</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>PluginTemplate</name>
@@ -71,8 +71,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>tkachgeek</groupId>
-            <artifactId>ConfigYml</artifactId>
+            <groupId>ru.cwcode.tkach.config</groupId>
+            <artifactId>CWConfig</artifactId>
             <version>LATEST</version>
             <scope>provided</scope>
         </dependency>
@@ -86,12 +86,6 @@
             <groupId>ru.cwcode</groupId>
             <artifactId>PaperCommands</artifactId>
             <version>1.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>tkachgeek</groupId>
-            <artifactId>Commands</artifactId>
-            <version>1.4</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
