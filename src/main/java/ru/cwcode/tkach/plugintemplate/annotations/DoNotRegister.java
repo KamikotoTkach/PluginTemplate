@@ -1,4 +1,4 @@
-package ru.cwcode.plugintemplate.annotations;
+package ru.cwcode.tkach.plugintemplate.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

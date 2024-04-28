@@ -1,22 +1,22 @@
-package ru.cwcode.plugintemplate;
+package ru.cwcode.tkach.plugintemplate;
 
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.cwcode.commands.Command;
-import ru.cwcode.plugintemplate.annotations.DoNotRegister;
+import ru.cwcode.cwutils.bootstrap.Bootstrap;
+import ru.cwcode.cwutils.reflection.ClassScanner;
+import ru.cwcode.cwutils.reflection.ReflectionUtils;
+import ru.cwcode.cwutils.reflection.injector.InjectFields;
+import ru.cwcode.cwutils.reflection.injector.Injector;
+import ru.cwcode.cwutils.scheduler.Tasks;
+import ru.cwcode.cwutils.scheduler.annotationRepeatable.Repeat;
+import ru.cwcode.cwutils.scheduler.annotationRepeatable.RepeatAPI;
+import ru.cwcode.tkach.plugintemplate.annotations.DoNotRegister;
 import ru.cwcode.tkach.config.commands.ReloadCommands;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfig;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
 import ru.cwcode.tkach.config.paper.PaperPluginConfigPlatform;
-import tkachgeek.tkachutils.bootstrap.Bootstrap;
-import tkachgeek.tkachutils.reflection.ClassScanner;
-import tkachgeek.tkachutils.reflection.ReflectionUtils;
-import tkachgeek.tkachutils.reflection.injector.InjectFields;
-import tkachgeek.tkachutils.reflection.injector.Injector;
-import tkachgeek.tkachutils.scheduler.Tasks;
-import tkachgeek.tkachutils.scheduler.annotationRepeatable.Repeat;
-import tkachgeek.tkachutils.scheduler.annotationRepeatable.RepeatAPI;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
