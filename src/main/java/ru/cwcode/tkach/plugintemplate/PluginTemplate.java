@@ -3,6 +3,7 @@ package ru.cwcode.tkach.plugintemplate;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 import ru.cwcode.commands.Command;
 import ru.cwcode.cwutils.bootstrap.Bootstrap;
 import ru.cwcode.cwutils.reflection.ClassScanner;
@@ -45,12 +46,16 @@ public abstract class PluginTemplate extends Bootstrap {
   public void onLoad() {
     plugin = this;
     logger = getLogger();
-    yml = new YmlConfigManager(new PaperPluginConfigPlatform(this));
+    yml = new YmlConfigManager(getConfigPlatform());
     
     injectFields.bind(logger, Logger.class);
     injectFields.bind(plugin, JavaPlugin.class);
     
     super.onLoad();
+  }
+  
+  protected @NotNull PaperPluginConfigPlatform getConfigPlatform() {
+    return new PaperPluginConfigPlatform(this);
   }
   
   @Override
