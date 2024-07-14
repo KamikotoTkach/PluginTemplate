@@ -8,23 +8,24 @@ import ru.cwcode.commands.Command;
 import ru.cwcode.cwutils.bootstrap.Bootstrap;
 import ru.cwcode.cwutils.reflection.ClassScanner;
 import ru.cwcode.cwutils.reflection.ReflectionUtils;
+import ru.cwcode.cwutils.reflection.injector.Inject;
 import ru.cwcode.cwutils.reflection.injector.InjectFields;
 import ru.cwcode.cwutils.reflection.injector.Injector;
 import ru.cwcode.cwutils.scheduler.Tasks;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.Repeat;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.RepeatAPI;
+import ru.cwcode.tkach.config.base.Config;
 import ru.cwcode.tkach.plugintemplate.annotations.DoNotRegister;
 import ru.cwcode.tkach.config.commands.ReloadCommands;
-import ru.cwcode.tkach.config.jackson.yaml.YmlConfig;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
 import ru.cwcode.tkach.config.paper.PaperPluginConfigPlatform;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 public abstract class PluginTemplate extends Bootstrap {
@@ -35,23 +36,42 @@ public abstract class PluginTemplate extends Bootstrap {
   protected volatile List<Runnable> runSync = new ArrayList<>();
   protected volatile List<Class<?>> allClasses = new ArrayList<>();
   protected volatile List<Method> handleRepeatable = new ArrayList<>();
+  protected boolean debug = false;
+  
+  public void debug(Supplier<String> log) {
+    if (debug) logger.info(log.get());
+  }
   
   @Override
   public void onDisable() {
+    debug(() -> "PreDisable");
+    
     yml.saveAll(configPersistOptions -> {});
     Tasks.cancelTasks(this);
+    
+    debug(() -> "PostDisable");
   }
   
   @Override
   public void onLoad() {
-    plugin = this;
+    if (this.getDescription().getVersion().toLowerCase().contains("debug")) {
+      debug = true;
+    }
+    
     logger = getLogger();
+    
+    debug(() -> "PreLoad");
+    
+    plugin = this;
     yml = new YmlConfigManager(getConfigPlatform());
     
-    injectFields.bind(logger, Logger.class);
-    injectFields.bind(plugin, JavaPlugin.class);
+    bind(Logger.class, logger);
+    bind(JavaPlugin.class, plugin);
     
     super.onLoad();
+    
+    debug(() -> "PostLoad");
+    
   }
   
   protected @NotNull PaperPluginConfigPlatform getConfigPlatform() {
@@ -65,21 +85,40 @@ public abstract class PluginTemplate extends Bootstrap {
   
   @Override
   public void onEnable() {
+    debug(() -> "PreEnable");
+    
     super.onEnable();
     
     runDelayedTasks();
   }
   
   private void runDelayedTasks() {
+    debug(() -> "PostEnable, PreDelayedTasks");
+    
     onDelayedTask();
+    
+    allClasses.stream()
+              .filter(x -> x.isAnnotationPresent(Inject.class))
+              .peek(o -> debug(() -> o.getSimpleName() + " auto-bind candidate"))
+              .map(ReflectionUtils::getNewInstance)
+              .filter(Objects::nonNull)
+              .peek(o -> debug(() -> o.getClass().getSimpleName() + " was auto-binded"))
+              .forEach(this::bind);
+    
+    allClasses.stream()
+              .filter(Config.class::isAssignableFrom)
+              .peek(configClass -> {
+                debug(() -> configClass.getSimpleName() + " was injected");
+                Injector.inject(configClass, injectFields);
+              }) //чтобы перед созданием конфига у него уже были прокинуты зависимости
+              .map(PluginTemplate::getInstanceReflection)
+              .peek(o -> debug(() -> o == null ? "~null" : o.getClass().getSimpleName() + " was auto-binded"))
+              .filter(Objects::nonNull)
+              .forEach(this::bind);
     
     for (Class<?> classInfo : allClasses) {
       if (Listener.class.isAssignableFrom(classInfo)) {
         registerListener(classInfo);
-      }
-      
-      if (YmlConfig.class.isAssignableFrom(classInfo)) {
-        ReflectionUtils.tryToInvokeStaticMethod(classInfo, "getInstance");
       }
       
       Injector.inject(classInfo, injectFields);
@@ -96,30 +135,71 @@ public abstract class PluginTemplate extends Bootstrap {
     runSync = null;
     injectFields = null;
     handleRepeatable = null;
+    
+    debug(() -> "PostDelayedTasks");
+    
+  }
+  
+  protected  <T> void bind(Class<T> clazz, T object) {
+    injectFields.bind(object, clazz);
+    
+    debug(() -> "Binded class " + clazz);
+  }
+  
+  protected void bind(Object o) {
+    Class<Object> clazz = (Class<Object>) o.getClass();
+    
+    injectFields.bind(o, clazz);
+    
+    debug(() -> "[o] Binded class " + clazz);
+  }
+  
+  private static <T> T getInstanceReflection(Class<T> clazz) {
+    try {
+      Method load = clazz.getDeclaredMethod("getInstance");
+      if (Modifier.isStatic(load.getModifiers()) && load.getParameterCount() == 0) {
+        return (T) load.invoke(null);
+      }
+    } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassCastException e) {
+      e.printStackTrace();
+    }
+    return null;
   }
   
   protected void onDelayedTask() {
   }
   
   private void registerListener(Class<?> classInfo) {
+    debug(() -> "Trying to register listener "+ classInfo.getSimpleName());
+    
     if (classInfo.isAnnotationPresent(DoNotRegister.class)) return;
     
     Object listener = ReflectionUtils.getNewInstance(classInfo);
     if (listener == null) return;
     
     Bukkit.getPluginManager().registerEvents((Listener) listener, this);
+    
+    debug(() -> "Listener "+ classInfo.getSimpleName() + " was registered");
   }
   
   private void handleRepeatMethod(Method method) {
+      String name = method.getDeclaringClass().getSimpleName() + "/" + method.getName();
+      
+    debug(() -> "Handling repeat method "+ name);
+    
     Repeat annotation = method.getAnnotation(Repeat.class);
     
     if (annotation != null) {
-      this.getLogger().info("Registered task " + method.getDeclaringClass().getSimpleName() + "/" + method.getName());
+      this.getLogger().info("Registered task " + name);
       RepeatAPI.registerRepeatable(this, method, annotation);
+      
+      debug(() -> "Repeat method " + name + " registered");
     }
   }
   
   private void scanClasses() {
+    debug(() -> "Scanning classes");
+    
     try {
       
       new ClassScanner(this.getFile())
@@ -137,10 +217,14 @@ public abstract class PluginTemplate extends Bootstrap {
   }
   
   public void updateInjectedFields(List<?> update) {
+    debug(() -> "Updating injected fields ");
+    
     InjectFields inject = new InjectFields(update.toArray());
     
     for (Class<?> classInfo : allClasses) {
       Injector.inject(classInfo, inject);
+      
+      debug(() -> "Class " + classInfo.getSimpleName() + " was injected");
     }
   }
   
