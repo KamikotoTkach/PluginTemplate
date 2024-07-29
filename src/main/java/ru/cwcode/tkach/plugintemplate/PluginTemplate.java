@@ -15,6 +15,8 @@ import ru.cwcode.cwutils.scheduler.Tasks;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.Repeat;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.RepeatAPI;
 import ru.cwcode.tkach.config.base.Config;
+import ru.cwcode.tkach.dependencychecker.DependencyChecker;
+import ru.cwcode.tkach.dependencychecker.PluginRequirement;
 import ru.cwcode.tkach.plugintemplate.annotations.DoNotRegister;
 import ru.cwcode.tkach.config.commands.ReloadCommands;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
@@ -25,6 +27,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
@@ -32,10 +35,14 @@ public abstract class PluginTemplate extends Bootstrap {
   public static YmlConfigManager yml;
   public static JavaPlugin plugin;
   public static Logger logger;
+  
   protected volatile InjectFields injectFields = new InjectFields();
   protected volatile List<Runnable> runSync = new ArrayList<>();
   protected volatile List<Class<?>> allClasses = new ArrayList<>();
   protected volatile List<Method> handleRepeatable = new ArrayList<>();
+  
+  protected DependencyChecker dependencyChecker = new DependencyChecker();
+  
   protected boolean debug = false;
   
   public void debug(Supplier<String> log) {
@@ -68,6 +75,8 @@ public abstract class PluginTemplate extends Bootstrap {
     bind(Logger.class, logger);
     bind(JavaPlugin.class, plugin);
     
+    dependencyChecker.addListener(new DependencyAdapterListener(this));
+    
     super.onLoad();
     
     debug(() -> "PostLoad");
@@ -87,9 +96,14 @@ public abstract class PluginTemplate extends Bootstrap {
   public void onEnable() {
     debug(() -> "PreEnable");
     
+    dependencyChecker.handleDependencies();
     super.onEnable();
     
     runDelayedTasks();
+  }
+  
+  public void addDependency(String pluginId, Consumer<PluginRequirement.PluginRequirementBuilder> configurer) {
+    dependencyChecker.addDependency(pluginId, configurer);
   }
   
   private void runDelayedTasks() {
@@ -135,15 +149,15 @@ public abstract class PluginTemplate extends Bootstrap {
     runSync = null;
     injectFields = null;
     handleRepeatable = null;
+    dependencyChecker = null;
     
     debug(() -> "PostDelayedTasks");
-    
   }
   
   protected  <T> void bind(Class<T> clazz, T object) {
     injectFields.bind(object, clazz);
     
-    debug(() -> "Binded class " + clazz);
+    debug(() -> "Binded class " + object.getClass() + " as " + clazz);
   }
   
   protected void bind(Object o) {
@@ -183,7 +197,7 @@ public abstract class PluginTemplate extends Bootstrap {
   }
   
   private void handleRepeatMethod(Method method) {
-      String name = method.getDeclaringClass().getSimpleName() + "/" + method.getName();
+    String name = method.getDeclaringClass().getSimpleName() + "/" + method.getName();
       
     debug(() -> "Handling repeat method "+ name);
     
