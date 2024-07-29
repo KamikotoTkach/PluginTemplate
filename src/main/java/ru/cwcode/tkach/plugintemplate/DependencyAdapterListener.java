@@ -1,6 +1,6 @@
 package ru.cwcode.tkach.plugintemplate;
 
-import ru.cwcode.tkach.dependencychecker.DependencyListener;
+import ru.cwcode.cwutils.dependencyChecker.DependencyListener;
 
 public class DependencyAdapterListener implements DependencyListener {
   PluginTemplate pluginTemplate;
