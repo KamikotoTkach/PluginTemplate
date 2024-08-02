@@ -5,6 +5,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import ru.cwcode.commands.Command;
+import ru.cwcode.cwutils.ReloadCatcher;
 import ru.cwcode.cwutils.bootstrap.Bootstrap;
 import ru.cwcode.cwutils.dependencyChecker.DependencyChecker;
 import ru.cwcode.cwutils.dependencyChecker.PluginRequirement;
@@ -98,6 +99,8 @@ public abstract class PluginTemplate extends Bootstrap {
     
     dependencyChecker.handleDependencies();
     super.onEnable();
+    
+    Bukkit.getPluginManager().registerEvents(new ReloadCatcher(),this);
     
     runDelayedTasks();
   }
