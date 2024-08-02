@@ -6,7 +6,7 @@
 
     <groupId>ru.cwcode.tkach</groupId>
     <artifactId>PluginTemplate</artifactId>
-    <version>1.4</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
 
     <name>PluginTemplate</name>
@@ -213,7 +213,7 @@
         <dependency>
             <groupId>ru.cwcode.commands</groupId>
             <artifactId>PaperCommands</artifactId>
-            <version>1.3.0</version>
+            <version>1.3.1</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
