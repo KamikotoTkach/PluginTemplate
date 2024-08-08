@@ -6,7 +6,7 @@
 
     <groupId>ru.cwcode</groupId>
     <artifactId>PluginTemplate</artifactId>
-    <version>1.0</version>
+    <version>1.0-legacy</version>
     <packaging>jar</packaging>
 
     <name>PluginTemplate</name>

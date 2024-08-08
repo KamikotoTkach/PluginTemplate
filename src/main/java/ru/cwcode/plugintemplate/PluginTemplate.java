@@ -4,7 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import ru.cwcode.plugintemplate.annotations.DoNotRegister;
-import ru.cwcode.plugintemplate.config.LegacyReload;
 import ru.cwcode.plugintemplate.config.PaperReload;
 import tkachgeek.config.yaml.YmlConfig;
 import tkachgeek.config.yaml.YmlConfigManager;
@@ -139,9 +138,5 @@ public abstract class PluginTemplate extends Bootstrap {
   
   protected PaperReload paperReload() {
     return new PaperReload(yml, this);
-  }
-  
-  protected LegacyReload legacyReload() {
-    return new LegacyReload(yml, this);
   }
 }
