@@ -141,13 +141,8 @@ public abstract class PluginTemplate extends Bootstrap {
       Injector.inject(classInfo, injectFields);
     }
     
-    for (Method method : handleRepeatable) {
-      handleRepeatMethod(method);
-    }
-    
-    for (Runnable runnable : runSync) {
-      runnable.run();
-    }
+    handleRepeatable.forEach(this::handleRepeatMethod);
+    runSync.forEach(Runnable::run);
     
     runSync = null;
     injectFields = null;
