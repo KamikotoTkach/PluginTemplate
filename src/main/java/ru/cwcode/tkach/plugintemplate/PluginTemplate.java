@@ -18,6 +18,7 @@ import ru.cwcode.cwutils.scheduler.Tasks;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.Repeat;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.RepeatAPI;
 import ru.cwcode.tkach.config.base.Config;
+import ru.cwcode.tkach.config.jackson.yaml.YmlConfig;
 import ru.cwcode.tkach.plugintemplate.annotations.DoNotRegister;
 import ru.cwcode.tkach.config.commands.ReloadCommands;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
@@ -243,6 +244,11 @@ public abstract class PluginTemplate extends Bootstrap {
   protected Command paperReload() {
     return ReloadCommands.get(yml, ymlConfig -> {
       updateInjectedFields(Collections.singletonList(ymlConfig));
+      onConfigReload(ymlConfig);
     });
+  }
+  
+  protected void onConfigReload(YmlConfig ymlConfig) {
+  
   }
 }
