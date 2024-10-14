@@ -6,7 +6,7 @@
 
     <groupId>ru.cwcode.tkach</groupId>
     <artifactId>PluginTemplate</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
     <packaging>jar</packaging>
 
     <name>PluginTemplate</name>
@@ -201,7 +201,7 @@
         <dependency>
             <groupId>ru.cwcode.tkach.config</groupId>
             <artifactId>CWConfig</artifactId>
-            <version>2.1.4</version>
+            <version>2.2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

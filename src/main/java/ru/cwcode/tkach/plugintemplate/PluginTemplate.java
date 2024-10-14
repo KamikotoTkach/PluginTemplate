@@ -18,7 +18,11 @@ import ru.cwcode.cwutils.scheduler.Tasks;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.Repeat;
 import ru.cwcode.cwutils.scheduler.annotationRepeatable.RepeatAPI;
 import ru.cwcode.tkach.config.base.Config;
+import ru.cwcode.tkach.config.base.manager.ConfigManager;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfig;
+import ru.cwcode.tkach.config.repository.Repository;
+import ru.cwcode.tkach.config.repository.RepositoryManager;
+import ru.cwcode.tkach.config.repository.yml.YmlRepositoryManager;
 import ru.cwcode.tkach.plugintemplate.annotations.DoNotRegister;
 import ru.cwcode.tkach.config.commands.ReloadCommands;
 import ru.cwcode.tkach.config.jackson.yaml.YmlConfigManager;
@@ -37,6 +41,7 @@ public abstract class PluginTemplate extends Bootstrap {
   public static YmlConfigManager yml;
   public static JavaPlugin plugin;
   public static Logger logger;
+  private static RepositoryManager repositoryManager;
   
   protected volatile InjectFields injectFields = new InjectFields();
   protected volatile List<Runnable> runSync = new ArrayList<>();
@@ -72,17 +77,20 @@ public abstract class PluginTemplate extends Bootstrap {
     debug(() -> "PreLoad");
     
     plugin = this;
+    
     yml = new YmlConfigManager(getConfigPlatform());
+    repositoryManager = new YmlRepositoryManager(yml);
     
     bind(Logger.class, logger);
     bind(JavaPlugin.class, plugin);
+    bind(ConfigManager.class, yml);
+    bind(RepositoryManager.class, repositoryManager);
     
     dependencyChecker.addListener(new DependencyAdapterListener(this));
     
     super.onLoad();
     
     debug(() -> "PostLoad");
-    
   }
   
   protected @NotNull PaperPluginConfigPlatform getConfigPlatform() {
@@ -129,7 +137,7 @@ public abstract class PluginTemplate extends Bootstrap {
                 debug(() -> configClass.getSimpleName() + " was injected");
                 Injector.inject(configClass, injectFields);
               }) //чтобы перед созданием конфига у него уже были прокинуты зависимости
-              .map(PluginTemplate::getInstanceReflection)
+              .map(PluginTemplate::getConfigInstance)
               .peek(o -> debug(() -> o == null ? "~null" : o.getClass().getSimpleName() + " was auto-binded"))
               .filter(Objects::nonNull)
               .forEach(this::bind);
@@ -167,14 +175,18 @@ public abstract class PluginTemplate extends Bootstrap {
     debug(() -> "[o] Binded class " + clazz);
   }
   
-  private static <T> T getInstanceReflection(Class<T> clazz) {
+  private static <T> T getConfigInstance(Class<T> clazz) {
+    if (Repository.class.isAssignableFrom(clazz)) {
+      T repository = (T) repositoryManager.getRepository(clazz);
+      if (repository != null) return repository;
+    }
+    
     try {
       Method load = clazz.getDeclaredMethod("getInstance");
       if (Modifier.isStatic(load.getModifiers()) && load.getParameterCount() == 0) {
         return (T) load.invoke(null);
       }
     } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassCastException e) {
-      e.printStackTrace();
     }
     return null;
   }
